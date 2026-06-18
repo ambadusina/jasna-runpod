@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl wget unzip \
+    curl wget \
     ffmpeg \
     mkvtoolnix \
     xvfb \
@@ -18,15 +18,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     procps \
     nano \
+    zstd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app && \
-    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.zip" \
-    -O /tmp/jasna.zip && \
-    unzip /tmp/jasna.zip -d /app && \
-    rm /tmp/jasna.zip && \
-    chmod +x /app/jasna
+RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-aa" -O /tmp/part-aa && \
+    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-ab" -O /tmp/part-ab && \
+    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-ac" -O /tmp/part-ac && \
+    cat /tmp/part-aa /tmp/part-ab /tmp/part-ac > /tmp/jasna.tar.zst && \
+    rm /tmp/part-aa /tmp/part-ab /tmp/part-ac && \
+    mkdir -p /app && \
+    tar -I zstd -xf /tmp/jasna.tar.zst -C /app && \
+    rm /tmp/jasna.tar.zst
 
 RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
 
