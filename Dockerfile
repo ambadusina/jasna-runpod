@@ -35,6 +35,9 @@ RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux
 
 RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
 
+RUN wget -q "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
+    -O /app/model_weights/rfdetr-v5.bs4.fp16.linux.engine
+
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
 ENV RESOLUTION=1920x1080
