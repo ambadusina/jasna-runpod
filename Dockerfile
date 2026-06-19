@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     mkvtoolnix \
     xvfb \
     x11vnc \
+    x11-utils \
     xfce4 \
     xfce4-terminal \
     dbus-x11 \
@@ -16,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     websockify \
     supervisor \
     net-tools \
+    netcat-openbsd \
     procps \
     nano \
     zstd \
@@ -35,6 +37,19 @@ RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
 
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
+ENV RESOLUTION=1920x1080
+ENV PATH="/app:$PATH"
+
+RUN ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
+
+COPY supervisord.conf /etc/supervisor/conf.d/jasna.conf
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 6080 5900 8888
+
+WORKDIR /workspace
+CMD ["/start.sh"]NV DISPLAY=:1
 ENV RESOLUTION=1920x1080
 ENV PATH="/app:$PATH"
 
