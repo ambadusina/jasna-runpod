@@ -35,8 +35,19 @@ RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux
 
 RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
 
+# Engine RF-DETR baké
 RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
     -o /app/model_weights/rfdetr-v5.bs4.fp16.linux.engine
+
+# Engine unet-4x baké
+RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/unet-4x.fp16.linux.engine.enc" \
+    -o /app/model_weights/unet-4x.fp16.linux.engine.enc
+
+# Sub-engines BasicVSR++ bakés
+RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/sub_engines.tar" \
+    -o /tmp/sub_engines.tar && \
+    tar -xf /tmp/sub_engines.tar -C /app/model_weights/ && \
+    rm /tmp/sub_engines.tar
 
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
