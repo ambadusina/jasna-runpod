@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     supervisor \
+    openssh-server \
     net-tools \
     netcat-openbsd \
     procps \
@@ -23,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zstd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /var/run/sshd /root/.ssh && \
+    chmod 700 /root/.ssh && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 
 RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-aa" -O /tmp/part-aa && \
     wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-ab" -O /tmp/part-ab && \
@@ -60,7 +65,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/jasna.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 6080 5900 8888
+EXPOSE 6080 5900 8888 22
 
 WORKDIR /workspace
 CMD ["/start.sh"]
