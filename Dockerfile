@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     unzip \
     pkg-config \
-    ffmpeg \
     mkvtoolnix \
     xvfb \
     x11vnc \
@@ -47,9 +46,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# FFmpeg 8 (requis par Jasna : version majeure 8 obligatoire). Ubuntu 24.04 ne
+# fournit que FFmpeg 6 en natif, on passe donc par un PPA dedie.
+RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg8 -y && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Verifier FFmpeg version 8 (requis par Jasna)
-RUN ffmpeg -version | head -1 | grep -E "version [89]" || \
-    (echo "FFmpeg version must be 8.x — check the base image" && exit 1)
+RUN ffmpeg -version | head -1 | grep -E "version 8" || \
+    (echo "FFmpeg version must be 8.x — PPA install failed" && exit 1)
 
 # =============================================================================
 # 2. PYTHON & UV
