@@ -78,15 +78,17 @@ RUN uv pip install "setuptools<81" wheel pip cmake ninja
 # 3. TORCH + TENSORRT (avant les libs custom : vali et PyNvVideoCodec sont des
 #    extensions C++/CUDA liees a PyTorch, torch doit donc etre present au moment
 #    de leur compilation avec --no-build-isolation)
+# Versions alignees sur la commande officielle de l'auteur de Jasna :
+#   uv pip install --torch-backend=cu130 torch==2.9.1 torchvision==0.24.1 \
+#       torch-tensorrt==2.9.0 ...
+# --torch-backend=cu130 : methode uv native pour CUDA 13, resout proprement les
+# dependances (evite le conflit nvidia-cuda-runtime-cu13 en pre-release).
+# tensorrt n'est PAS installe separement : torch-tensorrt tire la bonne version.
 # =============================================================================
-RUN uv pip install \
-    "torch==2.10.0+cu130" \
-    "torchvision==0.25.0+cu130" \
-    --index-url https://download.pytorch.org/whl/cu130
-
-RUN uv pip install \
-    "tensorrt==10.14.1.48.post1" \
-    "torch-tensorrt==2.10.0"
+RUN uv pip install --torch-backend=cu130 \
+    "torch==2.9.1" \
+    "torchvision==0.24.1" \
+    "torch-tensorrt==2.9.0"
 
 # =============================================================================
 # 4. LIBS CUSTOM (vali + PyNvVideoCodec) — build depuis source
