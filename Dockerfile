@@ -86,10 +86,19 @@ RUN cd /app/upscale && \
 RUN mkdir -p /app/upscale/seedvr2/models
 
 # --- 3) Practical-RIFE (interpolation de frames, Python) ---
+# IMPORTANT : on N'UTILISE PAS le requirements.txt de RIFE tel quel. Il tire des
+# paquets anciens/non maintenus (ex: sk-video) qui veulent se compiler depuis
+# les sources et echouent sur Python 3.12 (vieux setuptools utilisant
+# pkgutil.ImpImporter, supprime en 3.12). Il epingle aussi parfois torch, ce qui
+# ecraserait notre torch CUDA 13. RIFE n'a en realite besoin, en plus de
+# torch/torchvision (deja la), que de numpy, opencv et tqdm. On les installe
+# explicitement, en wheels modernes uniquement (aucun build from source).
 RUN mkdir -p /app/interp && cd /app/interp && \
-    git clone --depth 1 https://github.com/hzwer/Practical-RIFE.git rife && \
-    cd rife && \
-    /opt/aitools/bin/pip install --no-cache-dir -r requirements.txt
+    git clone --depth 1 https://github.com/hzwer/Practical-RIFE.git rife
+RUN /opt/aitools/bin/pip install --no-cache-dir \
+    numpy \
+    opencv-python \
+    tqdm
 # Poids RIFE : pas dans le repo git, a versionner dans le repo sous rife_train_log/
 COPY rife_train_log/ /app/interp/rife/train_log/
 COPY rife_video.sh /app/interp/rife_video.sh
