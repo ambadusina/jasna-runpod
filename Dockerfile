@@ -67,6 +67,11 @@ RUN uv venv /opt/venv --python python3.13
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Outils de build dans le venv : requis car les installations ci-dessous
+# utilisent --no-build-isolation (uv n'installe alors PAS les outils de build
+# dans un environnement isole, il faut donc qu'ils soient deja presents).
+RUN uv pip install setuptools wheel pip cmake ninja
+
 # =============================================================================
 # 3. LIBS CUSTOM (vali + PyNvVideoCodec) — build depuis source
 # =============================================================================
