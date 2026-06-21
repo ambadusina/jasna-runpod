@@ -3,6 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget \
+    openssh-server \
     ffmpeg \
     mkvtoolnix \
     xvfb \
@@ -21,6 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zstd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+# Cles d'hote SSH generees au build (sshd ne demarre pas sans).
+RUN ssh-keygen -A && mkdir -p /run/sshd
 RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-aa" -O /tmp/part-aa && \
     wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-ab" -O /tmp/part-ab && \
     wget -q "https://github.com/Kruk2/jasna/releases/download/v0.7.2/jasna-linux.tar.zst.part-ac" -O /tmp/part-ac && \
