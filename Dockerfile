@@ -20,6 +20,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     nano \
     zstd \
+    git \
+    build-essential \
+    python3-venv \
+    python3-pip \
+    python3-dev \
+    python3-tk \
+    libsndfile1 \
+    libsndfile1-dev \
+    portaudio19-dev \
+    libwebkit2gtk-4.1-0 \
+    libgtk-3-0 \
+    gir1.2-webkit2-4.1 \
+    libc++1 \
+    libc++abi1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 # Cles d'hote SSH generees au build (sshd ne demarre pas sans).
@@ -44,6 +58,34 @@ RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engi
     -o /tmp/sub_engines.tar && \
     tar -xf /tmp/sub_engines.tar -C /app/model_weights/ && \
     rm /tmp/sub_engines.tar
+
+# +++ JupyterLab dans un venv isole (port 8888) +++
+RUN python3 -m venv /opt/jupyter-venv && \
+    /opt/jupyter-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/jupyter-venv/bin/pip install --no-cache-dir jupyterlab && \
+    mkdir -p /workspace/notebooks
+
+# +++ WhisperJAV dans un venv isole (PyTorch cu128, extras cli+gui+translate) +++
+# PyTorch DOIT etre installe en premier via --index-url pour verrouiller la version GPU.
+# install.py --cuda128 detecte le GPU et gere l'ordre d'installation.
+RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
+    python3 -m venv /opt/whisperjav-venv && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir \
+        torch torchaudio --index-url https://download.pytorch.org/whl/cu128 && \
+    cd /opt/whisperjav && \
+    /opt/whisperjav-venv/bin/python install.py --cuda128 --skip-preflight && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir -e ".[gui]"
+
+# +++ Lanceur GUI + icone bureau XFCE (lancement manuel, pas au boot) +++
+# Pas de volume persistant : les modeles se retelechargent a chaque nouveau pod.
+RUN printf '#!/bin/bash\nexport MPLBACKEND=Agg\nsource /opt/whisperjav-venv/bin/activate\ncd /workspace\nexec whisperjav-gui\n' \
+    > /usr/local/bin/whisperjav-gui-launch && \
+    chmod +x /usr/local/bin/whisperjav-gui-launch && \
+    mkdir -p /root/Desktop && \
+    printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=WhisperJAV\nComment=Generateur de sous-titres ASR\nExec=/usr/local/bin/whisperjav-gui-launch\nTerminal=true\nCategories=AudioVideo;\n' \
+    > /root/Desktop/WhisperJAV.desktop && \
+    chmod +x /root/Desktop/WhisperJAV.desktop
 
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
