@@ -66,11 +66,12 @@ RUN python3 -m venv /opt/jupyter-venv && \
     mkdir -p /workspace/notebooks
 
 # +++ WhisperJAV dans un venv isole (PyTorch cu128, extras cli+gui+translate) +++
-# PyTorch DOIT etre installe en premier via --index-url pour verrouiller la version GPU.
-# install.py --cuda128 detecte le GPU et gere l'ordre d'installation.
+# install.py utilise `uv` en interne (python -m uv sync) -> uv doit etre present.
+# PyTorch installe en premier via --index-url pour verrouiller la version GPU.
 RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
     python3 -m venv /opt/whisperjav-venv && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir uv && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir \
         torch torchaudio --index-url https://download.pytorch.org/whl/cu128 && \
     cd /opt/whisperjav && \
