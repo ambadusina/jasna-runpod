@@ -32,6 +32,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.1-0 \
     libgtk-3-0 \
     gir1.2-webkit2-4.1 \
+    gir1.2-gtk-3.0 \
+    libgirepository1.0-dev \
+    libcairo2-dev \
+    pkg-config \
+    gobject-introspection \
     libc++1 \
     libc++abi1 \
     && apt-get clean \
@@ -66,8 +71,9 @@ RUN python3 -m venv /opt/jupyter-venv && \
     mkdir -p /workspace/notebooks
 
 # +++ WhisperJAV dans un venv isole (PyTorch cu128, extras cli+gui+translate) +++
-# install.py utilise `uv` en interne (python -m uv sync) -> uv doit etre present.
-# PyTorch installe en premier via --index-url pour verrouiller la version GPU.
+# PyTorch DOIT etre installe en premier via --index-url pour verrouiller la version GPU.
+# install.py --cuda128 detecte le GPU et gere l'ordre d'installation.
+# pygobject<3.52 : backend GTK3 pour pywebview (GUI). 3.56+ exige girepository-2.0 (GTK4).
 RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
     python3 -m venv /opt/whisperjav-venv && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir --upgrade pip && \
@@ -76,7 +82,8 @@ RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
         torch torchaudio --index-url https://download.pytorch.org/whl/cu128 && \
     cd /opt/whisperjav && \
     /opt/whisperjav-venv/bin/python install.py --cuda128 --skip-preflight && \
-    /opt/whisperjav-venv/bin/pip install --no-cache-dir -e ".[gui]"
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir -e ".[gui]" && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir "pygobject<3.52" pycairo
 
 # +++ Lanceur GUI + icone bureau XFCE (lancement manuel, pas au boot) +++
 # Pas de volume persistant : les modeles se retelechargent a chaque nouveau pod.
