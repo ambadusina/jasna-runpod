@@ -74,6 +74,7 @@ RUN python3 -m venv /opt/jupyter-venv && \
 # PyTorch DOIT etre installe en premier via --index-url pour verrouiller la version GPU.
 # install.py --cuda128 detecte le GPU et gere l'ordre d'installation.
 # pygobject<3.52 : backend GTK3 pour pywebview (GUI). 3.56+ exige girepository-2.0 (GTK4).
+# soundfile/librosa/... : deps audio importees au boot, non posees par install.py.
 RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
     python3 -m venv /opt/whisperjav-venv && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir --upgrade pip && \
@@ -83,7 +84,8 @@ RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
     cd /opt/whisperjav && \
     /opt/whisperjav-venv/bin/python install.py --cuda128 --skip-preflight && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir -e ".[gui]" && \
-    /opt/whisperjav-venv/bin/pip install --no-cache-dir "pygobject<3.52" pycairo
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir "pygobject<3.52" pycairo && \
+    /opt/whisperjav-venv/bin/pip install --no-cache-dir soundfile librosa numba audioread resampy
 
 # +++ Lanceur GUI + icone bureau XFCE (lancement manuel, pas au boot) +++
 # Pas de volume persistant : les modeles se retelechargent a chaque nouveau pod.
