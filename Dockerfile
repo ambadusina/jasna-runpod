@@ -49,8 +49,9 @@ RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux
     cat /tmp/part-aa /tmp/part-ab /tmp/part-ac > /tmp/jasna.tar.zst && \
     rm /tmp/part-aa /tmp/part-ab /tmp/part-ac && \
     mkdir -p /app && \
-    tar -I zstd -xf /tmp/jasna.tar.zst -C /app && \
-    rm /tmp/jasna.tar.zst
+    tar -I zstd --strip-components=2 -xf /tmp/jasna.tar.zst -C /app && \
+    rm /tmp/jasna.tar.zst && \
+    mkdir -p /app/model_weights
 RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
 # Engine RF-DETR bake
 RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
