@@ -49,20 +49,22 @@ RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux
     cat /tmp/part-aa /tmp/part-ab /tmp/part-ac > /tmp/jasna.tar.zst && \
     rm /tmp/part-aa /tmp/part-ab /tmp/part-ac && \
     mkdir -p /app && \
-    tar -I zstd --strip-components=2 -xf /tmp/jasna.tar.zst -C /app && \
-    rm /tmp/jasna.tar.zst && \
-    mkdir -p /app/model_weights
-RUN mkdir -p /workspace/model_weights /workspace/input /workspace/output
-# Engine RF-DETR bake
-RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
-    -o /app/model_weights/rfdetr-v5.bs4.fp16.linux.engine
-# Engine unet-4x bake
-RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/unet-4x.fp16.linux.engine.enc" \
-    -o /app/model_weights/unet-4x.fp16.linux.engine.enc
-# Sub-engines BasicVSR++ bakes
-RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/sub_engines.tar" \
-    -o /tmp/sub_engines.tar && \
-    tar -xf /tmp/sub_engines.tar -C /app/model_weights/ && \
+    tar -I zstd -xf /tmp/jasna.tar.zst -C /app && \
+    rm /tmp/jasna.tar.zst
+
+RUN mkdir -p /workspace/input /workspace/output
+
+# +++ Engines pre-compiles deposes sur le Bureau (mis de cote, pas charges par Jasna) +++
+# A copier manuellement dans /app/jasna-linux-nvidia-0.8.1/model_weights une fois la
+# compatibilite TensorRT confirmee.
+RUN mkdir -p /root/Desktop/engines_bakes && \
+    curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
+        -o /root/Desktop/engines_bakes/rfdetr-v5.bs4.fp16.linux.engine && \
+    curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/unet-4x.fp16.linux.engine.enc" \
+        -o /root/Desktop/engines_bakes/unet-4x.fp16.linux.engine.enc && \
+    curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/sub_engines.tar" \
+        -o /tmp/sub_engines.tar && \
+    tar -xf /tmp/sub_engines.tar -C /root/Desktop/engines_bakes/ && \
     rm /tmp/sub_engines.tar
 
 # +++ JupyterLab dans un venv isole (port 8888) +++
@@ -88,7 +90,7 @@ RUN git clone https://github.com/meizhong986/whisperjav.git /opt/whisperjav && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir "pygobject<3.52" pycairo && \
     /opt/whisperjav-venv/bin/pip install --no-cache-dir soundfile librosa numba audioread resampy
 
-# +++ Lanceur GUI + icone bureau XFCE (lancement manuel, pas au boot) +++
+# +++ Lanceur GUI WhisperJAV + icone bureau XFCE (lancement manuel, pas au boot) +++
 # Pas de volume persistant : les modeles se retelechargent a chaque nouveau pod.
 RUN printf '#!/bin/bash\nexport MPLBACKEND=Agg\nsource /opt/whisperjav-venv/bin/activate\ncd /workspace\nexec whisperjav-gui\n' \
     > /usr/local/bin/whisperjav-gui-launch && \
@@ -98,10 +100,19 @@ RUN printf '#!/bin/bash\nexport MPLBACKEND=Agg\nsource /opt/whisperjav-venv/bin/
     > /root/Desktop/WhisperJAV.desktop && \
     chmod +x /root/Desktop/WhisperJAV.desktop
 
+# +++ Lanceur GUI Jasna + icone bureau XFCE (lancement manuel, pas au boot) +++
+# cd dans le dossier versionne avant de lancer : Jasna resout model_weights/ en relatif.
+RUN printf '#!/bin/bash\ncd /app/jasna-linux-nvidia-0.8.1\nexec ./jasna\n' \
+    > /usr/local/bin/jasna-gui-launch && \
+    chmod +x /usr/local/bin/jasna-gui-launch && \
+    printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Jasna\nComment=Restauration video JAV\nExec=/usr/local/bin/jasna-gui-launch\nTerminal=true\nCategories=AudioVideo;\n' \
+    > /root/Desktop/Jasna.desktop && \
+    chmod +x /root/Desktop/Jasna.desktop
+
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
 ENV RESOLUTION=1920x1080
-ENV PATH="/app:$PATH"
+ENV PATH="/app/jasna-linux-nvidia-0.8.1:$PATH"
 RUN ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 COPY supervisord.conf /etc/supervisor/conf.d/jasna.conf
 COPY start.sh /start.sh
