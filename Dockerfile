@@ -129,12 +129,25 @@ RUN /opt/propainter-venv/bin/python -c \
     "import ptlflow; ptlflow.get_model('fastflownet', pretrained_ckpt='things')" || \
     echo "AVERTISSEMENT: pre-fetch fastflownet echoue, sera telecharge au 1er lancement"
 
+# +++ FaceFusion 3.7.1 (licence OpenRAIL-AS, usage perso : anonymisation) +++
+# Venv isole : onnxruntime-gpu, independant des venvs Jasna/WhisperJAV/ProPainter.
+# L'argument onnxruntime est POSITIONNEL (pas --onnxruntime).
+RUN git clone https://github.com/facefusion/facefusion.git /opt/facefusion && \
+    python3 -m venv /opt/facefusion-venv && \
+    /opt/facefusion-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    cd /opt/facefusion && \
+    /opt/facefusion-venv/bin/python install.py cuda --skip-conda
+
+# +++ Gradio expose sur 0.0.0.0, port 7861 (7860 pris par ProPainter) +++
+RUN sed -i "s/ui\.launch(favicon_path = 'facefusion\.ico', inbrowser = state_manager\.get_item('open_browser'))/ui.launch(favicon_path = 'facefusion.ico', inbrowser = False, server_name = '0.0.0.0', server_port = 7861)/" \
+        /opt/facefusion/facefusion/uis/layouts/default.py && \
+    grep -q "server_name = '0.0.0.0'" /opt/facefusion/facefusion/uis/layouts/default.py
+
 # +++ Lanceur GUI WhisperJAV + icone bureau XFCE (lancement manuel, pas au boot) +++
 # Pas de volume persistant : les modeles se retelechargent a chaque nouveau pod.
 RUN printf '#!/bin/bash\nexport MPLBACKEND=Agg\nsource /opt/whisperjav-venv/bin/activate\ncd /workspace\nexec whisperjav-gui\n' \
     > /usr/local/bin/whisperjav-gui-launch && \
     chmod +x /usr/local/bin/whisperjav-gui-launch && \
-    mkdir -p /root/Desktop && \
     printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=WhisperJAV\nComment=Generateur de sous-titres ASR\nExec=/usr/local/bin/whisperjav-gui-launch\nTerminal=true\nCategories=AudioVideo;\n' \
     > /root/Desktop/WhisperJAV.desktop && \
     chmod +x /root/Desktop/WhisperJAV.desktop
@@ -156,6 +169,14 @@ RUN printf '#!/bin/bash\nsource /opt/propainter-venv/bin/activate\ncd /opt/faste
     > /root/Desktop/faster-ProPainter.desktop && \
     chmod +x /root/Desktop/faster-ProPainter.desktop
 
+# +++ Lanceur GUI FaceFusion + icone bureau XFCE +++
+RUN printf '#!/bin/bash\nsource /opt/facefusion-venv/bin/activate\ncd /opt/facefusion\necho "GUI sur le port 7861 -> ouvrir via le proxy RunPod"\nexec python facefusion.py run\n' \
+    > /usr/local/bin/facefusion-gui-launch && \
+    chmod +x /usr/local/bin/facefusion-gui-launch && \
+    printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=FaceFusion\nComment=Anonymisation de visages\nExec=/usr/local/bin/facefusion-gui-launch\nTerminal=true\nCategories=AudioVideo;\n' \
+    > /root/Desktop/FaceFusion.desktop && \
+    chmod +x /root/Desktop/FaceFusion.desktop
+
 # +++ Lanceur GUI Jasna + icone bureau XFCE (lancement manuel, pas au boot) +++
 # cd dans le dossier versionne avant de lancer : Jasna resout model_weights/ en relatif.
 RUN printf '#!/bin/bash\ncd /app/jasna-linux-nvidia-0.8.1\nexec ./jasna\n' \
@@ -173,6 +194,6 @@ RUN ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 COPY supervisord.conf /etc/supervisor/conf.d/jasna.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
-EXPOSE 6080 5900 8888 7860
+EXPOSE 6080 5900 8888 7860 7861
 WORKDIR /workspace
 CMD ["/start.sh"]
