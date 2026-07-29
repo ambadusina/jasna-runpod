@@ -43,9 +43,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # Cles d'hote SSH generees au build (sshd ne demarre pas sans).
 RUN ssh-keygen -A && mkdir -p /run/sshd
-RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux-nvidia-0.8.1.tar.zst.part000" -O /tmp/part-aa && \
-    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux-nvidia-0.8.1.tar.zst.part001" -O /tmp/part-ab && \
-    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux-nvidia-0.8.1.tar.zst.part002" -O /tmp/part-ac && \
+RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.9.1/jasna-linux-nvidia-0.9.1.tar.zst.part000" -O /tmp/part-aa && \
+    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.9.1/jasna-linux-nvidia-0.9.1.tar.zst.part001" -O /tmp/part-ab && \
+    wget -q "https://github.com/Kruk2/jasna/releases/download/v0.9.1/jasna-linux-nvidia-0.9.1.tar.zst.part002" -O /tmp/part-ac && \
     cat /tmp/part-aa /tmp/part-ab /tmp/part-ac > /tmp/jasna.tar.zst && \
     rm /tmp/part-aa /tmp/part-ab /tmp/part-ac && \
     mkdir -p /app && \
@@ -55,15 +55,21 @@ RUN wget -q "https://github.com/Kruk2/jasna/releases/download/v0.8.1/jasna-linux
 RUN mkdir -p /workspace/input /workspace/output
 
 # +++ Engines TensorRT pre-compiles bakes dans model_weights +++
+# DESACTIVE pour la 0.9.1 : les engines 0.8.1 ne sont plus valides.
+#   - detection : le modele par defaut est passe de rfdetr-v5 a rfdetr-v6
+#   - sub_engines : preprocess_b{clip}/upsample_dyn_b{clip} remplaces par
+#     preprocess_b60 / upsample_dyn_b30 (compilation clip-size agnostic)
+# A regenerer sur pod puis reactiver ici avec les nouveaux noms.
 # Doit venir APRES l'extraction de l'archive (model_weights doit exister).
-RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/rfdetr-v5.bs4.fp16.linux.engine" \
-        -o /app/jasna-linux-nvidia-0.8.1/model_weights/rfdetr-v5.bs4.fp16.linux.engine && \
-    curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/unet-4x.fp16.linux.engine.enc" \
-        -o /app/jasna-linux-nvidia-0.8.1/model_weights/unet-4x.fp16.linux.engine.enc && \
-    curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/sub_engines.tar" \
-        -o /tmp/sub_engines.tar && \
-    tar -xf /tmp/sub_engines.tar -C /app/jasna-linux-nvidia-0.8.1/model_weights/ && \
-    rm /tmp/sub_engines.tar
+#
+# RUN curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/<detection>.engine" \
+#         -o /app/jasna-linux-nvidia-0.9.1/model_weights/<detection>.engine && \
+#     curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/unet-4x.fp16.linux.engine.enc" \
+#         -o /app/jasna-linux-nvidia-0.9.1/model_weights/unet-4x.fp16.linux.engine.enc && \
+#     curl -fSL "https://github.com/ambadusina/jasna-runpod/releases/download/engine/sub_engines.tar" \
+#         -o /tmp/sub_engines.tar && \
+#     tar -xf /tmp/sub_engines.tar -C /app/jasna-linux-nvidia-0.9.1/model_weights/ && \
+#     rm /tmp/sub_engines.tar
 
 # +++ JupyterLab dans un venv isole (port 8888) +++
 RUN python3 -m venv /opt/jupyter-venv && \
@@ -100,7 +106,7 @@ RUN printf '#!/bin/bash\nexport MPLBACKEND=Agg\nsource /opt/whisperjav-venv/bin/
 
 # +++ Lanceur GUI Jasna + icone bureau XFCE (lancement manuel, pas au boot) +++
 # cd dans le dossier versionne avant de lancer : Jasna resout model_weights/ en relatif.
-RUN printf '#!/bin/bash\ncd /app/jasna-linux-nvidia-0.8.1\nexec ./jasna\n' \
+RUN printf '#!/bin/bash\ncd /app/jasna-linux-nvidia-0.9.1\nexec ./jasna\n' \
     > /usr/local/bin/jasna-gui-launch && \
     chmod +x /usr/local/bin/jasna-gui-launch && \
     printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Jasna\nComment=Restauration video JAV\nExec=/usr/local/bin/jasna-gui-launch\nTerminal=true\nCategories=AudioVideo;\n' \
@@ -110,7 +116,7 @@ RUN printf '#!/bin/bash\ncd /app/jasna-linux-nvidia-0.8.1\nexec ./jasna\n' \
 ENV VNC_PASSWORD=jasna1234
 ENV DISPLAY=:1
 ENV RESOLUTION=1920x1080
-ENV PATH="/app/jasna-linux-nvidia-0.8.1:$PATH"
+ENV PATH="/app/jasna-linux-nvidia-0.9.1:$PATH"
 RUN ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 COPY supervisord.conf /etc/supervisor/conf.d/jasna.conf
 COPY start.sh /start.sh
